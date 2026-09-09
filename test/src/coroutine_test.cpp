@@ -2,10 +2,10 @@
 // Created by X-ray on 01/04/2026.
 //
 
-#include <gtest/gtest.h>
-#include <base-coro/coroutine.hpp>
-#include <base-coro/mutex.hpp>
 #include <chrono>
+#include <gtest/gtest.h>
+#include <minicoropp/coroutine.hpp>
+#include <minicoropp/mutex.hpp>
 
 using namespace minicoropp;
 
