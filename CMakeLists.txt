@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+enable_testing()
+
 include(get_cpm.cmake)
 
 option(MINICOROPP_USE_ASM "Use ASM implementation for coroutine context switching" ON)
