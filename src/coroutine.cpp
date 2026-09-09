@@ -31,6 +31,7 @@ namespace minicoropp {
 
       ~CoroutineDetail() {
         if (co != nullptr) {
+#ifndef NDEBUG
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(suppress:4189)
@@ -40,6 +41,7 @@ namespace minicoropp {
 #pragma warning(pop)
 #endif
           assert(state == MCO_DEAD || state == MCO_SUSPENDED);
+#endif
           mco_destroy(co);
         }
         if (destroy_fn_ && func_ptr_) {
