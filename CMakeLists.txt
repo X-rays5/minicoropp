@@ -1,11 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
+
 project(minicoropp LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-
-enable_testing()
 
 include(get_cpm.cmake)
 
@@ -15,34 +14,75 @@ option(MINICOROPP_NO_DEFAULT_ALLOCATOR "Disable default mco allocator" OFF)
 option(MINICOROPP_USE_VMEM_ALLOCATOR "Use Virtual Memory allocator instead of malloc" OFF)
 
 set(MINICOROPP_MIN_STACK_SIZE 32768 CACHE STRING "Minimum stack size for coroutines")
-set(MINICOROPP_DEFAULT_STACK_SIZE 65536 CACHE STRING "Default stack size for coroutines (if not using vmem allocator)")
+set(MINICOROPP_DEFAULT_STACK_SIZE 65536 CACHE STRING "Default stack size for coroutines")
 set(MINICOROPP_DEFAULT_STORAGE_SIZE 1024 CACHE STRING "Default storage size reserved for coroutine buffers")
 
-# Create minicoro_config.h
-configure_file(
-        ${CMAKE_CURRENT_SOURCE_DIR}/minicoro_config.h.in
-        ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp/minicoro_config.h
+# ------------------------------------------------------------------------------
+# Generated configuration
+# ------------------------------------------------------------------------------
+
+set(MINICOROPP_GENERATED_INCLUDE_DIR
+        ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp)
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/minicoro_config.h.in
+        ${MINICOROPP_GENERATED_INCLUDE_DIR}/minicoropp/minicoro_config.h
+)
 
-# Copy headers to the include directory
-foreach (header ${HEADERS})
-    file(RELATIVE_PATH rel_path ${CMAKE_CURRENT_SOURCE_DIR}/src ${header})
-    set(dest ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp/${rel_path})
-    configure_file(${header} ${dest} COPYONLY)
-endforeach ()
+# ------------------------------------------------------------------------------
+# Headers
+# ------------------------------------------------------------------------------
 
-add_library(${PROJECT_NAME} STATIC
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
+)
+
+foreach(header ${HEADERS})
+    file(RELATIVE_PATH rel_path
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${header}
+    )
+
+    set(dest
+            ${MINICOROPP_GENERATED_INCLUDE_DIR}/minicoropp/${rel_path}
+    )
+
+    get_filename_component(dest_dir ${dest} DIRECTORY)
+    file(MAKE_DIRECTORY ${dest_dir})
+
+    configure_file(
+            ${header}
+            ${dest}
+            COPYONLY
+    )
+endforeach()
+
+# ------------------------------------------------------------------------------
+# Library
+# ------------------------------------------------------------------------------
+
+add_library(minicoropp STATIC
         src/coroutine.cpp
         src/coroutine.hpp
         src/mutex.cpp
         src/mutex.hpp
 )
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
-if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
+add_library(minicoropp::minicoropp ALIAS minicoropp)
+
+target_include_directories(minicoropp
+        PUBLIC
+        $<BUILD_INTERFACE:${MINICOROPP_GENERATED_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:include>
+)
+
+# ------------------------------------------------------------------------------
+# Compiler configuration
+# ------------------------------------------------------------------------------
+
+if(MSVC)
+    target_compile_options(minicoropp PRIVATE
             /wd4068
             /diagnostics:caret
             /W4
@@ -50,13 +90,13 @@ if (MSVC)
             /WX
     )
 
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
+    target_compile_definitions(minicoropp PRIVATE
             WIN32_LEAN_AND_MEAN
             NOMINMAX
             CRT_SECURE_NO_WARNINGS
     )
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE
+    target_compile_options(minicoropp PRIVATE
             -Wall
             -Wextra
             -Wpedantic
@@ -64,36 +104,35 @@ else()
     )
 endif()
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_WARNING_AS_ERROR ON)
-target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.hpp)
+set_property(
+        TARGET minicoropp
+        PROPERTY COMPILE_WARNING_AS_ERROR ON
+)
+
+target_precompile_headers(minicoropp PRIVATE
+        src/pch.hpp
+)
+
+# ------------------------------------------------------------------------------
+# Dependencies
+# ------------------------------------------------------------------------------
 
 include(vendor/minicoro.cmake)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE minicoro::minicoro)
+target_link_libraries(minicoropp
+        PRIVATE
+        minicoro::minicoro
+)
 
-# We make sure the headers are updated every build
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp)
-foreach (header ${HEADERS})
-    file(RELATIVE_PATH rel_path "${CMAKE_CURRENT_SOURCE_DIR}/src" ${header})
-    get_filename_component(dir_path ${rel_path} DIRECTORY)
+# ------------------------------------------------------------------------------
+# Tests
+#
+# Only add tests when minicoropp itself is the top-level project.
+# This prevents consumers using FetchContent_MakeAvailable(minicoropp)
+# from getting minicoropp's tests pulled into their build.
+# ------------------------------------------------------------------------------
 
-    # Create directory if needed
-    if (dir_path)
-        file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp/${dir_path})
-    endif ()
-
-    # Single copy command for all cases
-    add_custom_command(
-            TARGET ${PROJECT_NAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${header}
-            ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp/${rel_path}
-            COMMENT "Copying ${rel_path} to include directory"
-    )
-endforeach ()
-
-target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include)
-
-add_subdirectory(test)
+if(PROJECT_IS_TOP_LEVEL)
+    enable_testing()
+    add_subdirectory(test)
+endif()
