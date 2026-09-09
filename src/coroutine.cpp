@@ -8,13 +8,13 @@
 #include <exception>
 #include <stdexcept>
 #include <thread>
-#include <base-coro/minicoro_config.h>
+#include <minicoropp/minicoro_config.h>
 #define MINICORO_IMPL
 #include <minicoro/minicoro.h>
 
 namespace minicoropp {
   namespace detail {
-    void CoreExecWrapper(mco_coro* co);
+    static void CoreExecWrapper(mco_coro* co);
 
     class CoroutineDetail {
     public:
@@ -31,11 +31,17 @@ namespace minicoropp {
 
       ~CoroutineDetail() {
         if (co != nullptr) {
+#ifndef NDEBUG
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(suppress:4189)
+#endif
           const auto state = mco_status(co);
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
           assert(state == MCO_DEAD || state == MCO_SUSPENDED);
+#endif
           mco_destroy(co);
         }
         if (destroy_fn_ && func_ptr_) {

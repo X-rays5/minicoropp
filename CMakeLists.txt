@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
+enable_testing()
+
 include(get_cpm.cmake)
 
 option(MINICOROPP_USE_ASM "Use ASM implementation for coroutine context switching" ON)
@@ -19,7 +21,7 @@ set(MINICOROPP_DEFAULT_STORAGE_SIZE 1024 CACHE STRING "Default storage size rese
 # Create minicoro_config.h
 configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/minicoro_config.h.in
-        ${CMAKE_CURRENT_BINARY_DIR}/include/base-coro/minicoro_config.h
+        ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp/minicoro_config.h
 )
 
 file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS src/*.hpp)

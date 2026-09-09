@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.build_type }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2025-vs2026
+          - windows-11-vs2026-arm
+          - ubuntu-26.04
+          - ubuntu-26.04-arm
+          - macos-26
+          - macos-26-intel
+        build_type:
+          - Debug
+          - Release
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: >
+          cmake
+          -S .
+          -B build
+          -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_STANDARD=23
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

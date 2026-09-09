@@ -8,7 +8,6 @@ add_executable(${PROJECT_NAME}
 )
 
 include(../vendor/gtest.cmake)
-enable_testing()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE minicoropp)
 

@@ -23,6 +23,6 @@ configure_file(${minicoro_SOURCE_DIR}/minicoro.h ${CMAKE_CURRENT_BINARY_DIR}/inc
 message(STATUS "minicoro header copied to ${CMAKE_CURRENT_BINARY_DIR}/include/minicoro/include/minicoro/minicoro.h")
 
 target_include_directories(minicoro INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include/minicoro/include)
-target_include_directories(minicoro PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include/base-coro)
+target_include_directories(minicoro PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include/minicoropp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE minicoro::minicoro)
